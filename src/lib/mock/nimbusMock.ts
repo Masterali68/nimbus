@@ -31,32 +31,10 @@ export const TICK_MS = 2000;
 const SIM_MINUTES_PER_TICK = 1;
 const HISTORY_LENGTH = 36;
 
-export const CONTROLLERS: { id: ControllerMode; label: string; blurb: string }[] = [
-  {
-    id: "naive",
-    label: "Naive",
-    blurb: "Holds every load at full draw. Takes no protective action.",
-  },
-  {
-    id: "reactive",
-    label: "Reactive",
-    blurb: "Blanket load-shedding once the deficit crosses a fixed threshold.",
-  },
-  {
-    id: "nimbus",
-    label: "Nimbus",
-    blurb: "Priority-aware protection of critical services, acting early.",
-  },
-];
+// Display catalog lives in the API layer so the mock and the live UI never drift.
+import { CONTROLLERS, EVENTS } from "@/lib/api/catalog";
 
-export const EVENTS: { id: IslandEvent; label: string; glyph: string }[] = [
-  { id: "storm", label: "Storm", glyph: "⛈" },
-  { id: "cloud_cover", label: "Cloud Cover", glyph: "☁" },
-  { id: "wind_drop", label: "Wind Drop", glyph: "🍃" },
-  { id: "tourist_surge", label: "Tourist Surge", glyph: "🛬" },
-  { id: "water_emergency", label: "Water Emergency", glyph: "💧" },
-  { id: "compound_crisis", label: "Compound Crisis", glyph: "⚠" },
-];
+export { CONTROLLERS, EVENTS };
 
 interface ResourceMeta {
   id: ResourceId;
@@ -356,14 +334,19 @@ function step(prev: MockSnapshot): MockSnapshot {
   };
 }
 
-export function createInitialSnapshot(): MockSnapshot {
-  const seedEnergyKwh = 214;
+/**
+ * Seed a snapshot. Defaults to a calm, stable island so the STORM button is
+ * dramatic; pass an event to start mid-scenario.
+ */
+export function createInitialSnapshot(event: IslandEvent | null = null): MockSnapshot {
+  const seedEnergyKwh = event ? 214 : 268;
+  const target = genTargets(event);
   let snap: MockSnapshot = {
     clock: 0,
-    event: "storm",
+    event,
     controller: "nimbus",
-    solarKw: 74,
-    windKw: 34,
+    solarKw: target.solar,
+    windKw: target.wind,
     batteryEnergyKwh: seedEnergyKwh,
     restoreTicks: 0,
     filteredNetKw: 4,
@@ -371,10 +354,10 @@ export function createInitialSnapshot(): MockSnapshot {
     acceleration: 0,
     history: [],
     resolved: resolve({
-      event: "storm",
+      event,
       controller: "nimbus",
-      solarKw: 74,
-      windKw: 34,
+      solarKw: target.solar,
+      windKw: target.wind,
       batteryPct: batteryPctOf(seedEnergyKwh),
       batteryEnergyKwh: seedEnergyKwh,
       restoreTicks: 0,

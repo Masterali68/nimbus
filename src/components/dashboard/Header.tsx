@@ -1,14 +1,20 @@
 import type { ControllerMode, IslandState } from "@/types/nimbus";
-import { EVENTS } from "@/lib/mock/nimbusMock";
+import { CONTROLLER_LABEL, EVENTS } from "@/lib/api/catalog";
+import type { ConnectionState } from "@/lib/api/types";
 import { StatusBadge } from "./StatusBadge";
+import { ConnectionBadge } from "./ConnectionBadge";
 
-const CONTROLLER_LABEL: Record<ControllerMode, string> = {
-  naive: "Naive",
-  reactive: "Reactive",
-  nimbus: "Nimbus",
-};
-
-export function Header({ state }: { state: IslandState }) {
+export function Header({
+  state,
+  connection,
+  source,
+  switchingController,
+}: {
+  state: IslandState;
+  connection: ConnectionState;
+  source: "live" | "mock";
+  switchingController?: ControllerMode | null;
+}) {
   const event = state.activeEvent
     ? EVENTS.find((e) => e.id === state.activeEvent)
     : null;
@@ -32,6 +38,11 @@ export function Header({ state }: { state: IslandState }) {
             </span>
             <span className="font-medium text-ops-text">
               {CONTROLLER_LABEL[state.controller]}
+              {switchingController && switchingController !== state.controller && (
+                <span className="ml-1 text-ops-dim">
+                  → {CONTROLLER_LABEL[switchingController]}
+                </span>
+              )}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -43,6 +54,7 @@ export function Header({ state }: { state: IslandState }) {
             </span>
           </div>
           <StatusBadge status={state.status} />
+          <ConnectionBadge connection={connection} source={source} />
         </div>
       </div>
     </header>

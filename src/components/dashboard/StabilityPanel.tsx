@@ -2,12 +2,13 @@ import type { StabilityMetrics, TrajectoryLabel } from "@/types/nimbus";
 import { Panel } from "@/components/ui/Panel";
 import { Badge, type Tone } from "@/components/ui/Badge";
 import { signed1 } from "@/components/ui/format";
+import { TRAJECTORY_LABEL } from "@/lib/api/catalog";
 
-const TRAJ: Record<TrajectoryLabel, { tone: Tone; label: string }> = {
-  stable: { tone: "cyan", label: "Stable" },
-  improving: { tone: "green", label: "Improving" },
-  deteriorating: { tone: "amber", label: "Deteriorating" },
-  critical: { tone: "red", label: "Critical" },
+const TRAJ: Record<TrajectoryLabel, { tone: Tone }> = {
+  stable: { tone: "cyan" },
+  improving: { tone: "green" },
+  deteriorating: { tone: "amber" },
+  critical: { tone: "red" },
 };
 
 function toneForSign(v: number): string {
@@ -37,7 +38,13 @@ function Cell({
   );
 }
 
-export function StabilityPanel({ stability }: { stability: StabilityMetrics }) {
+export function StabilityPanel({
+  stability,
+  severityLabel,
+}: {
+  stability: StabilityMetrics;
+  severityLabel: string;
+}) {
   const t = TRAJ[stability.trajectory];
 
   return (
@@ -45,14 +52,14 @@ export function StabilityPanel({ stability }: { stability: StabilityMetrics }) {
       title="Stability / Trajectory"
       right={
         <Badge tone={t.tone} dot>
-          {t.label}
+          {TRAJECTORY_LABEL[stability.trajectory]}
         </Badge>
       }
     >
       <div className="flex flex-col gap-4">
-        <dl className="grid grid-cols-3 gap-3">
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Cell
-            label="Energy Balance"
+            label="Net Power"
             value={signed1(stability.energyBalanceKw)}
             unit="kW"
             tone={toneForSign(stability.energyBalanceKw)}
@@ -60,15 +67,16 @@ export function StabilityPanel({ stability }: { stability: StabilityMetrics }) {
           <Cell
             label="Velocity"
             value={signed1(stability.velocity)}
-            unit="kW/min"
+            unit="kW/s"
             tone={toneForSign(stability.velocity)}
           />
           <Cell
             label="Acceleration"
             value={signed1(stability.acceleration)}
-            unit="kW/min²"
+            unit="kW/s²"
             tone={toneForSign(stability.acceleration)}
           />
+          <Cell label="Severity" value={severityLabel} unit="" tone="text-ops-text" />
         </dl>
         <p className="text-sm leading-relaxed text-ops-muted">
           {stability.interpretation}
