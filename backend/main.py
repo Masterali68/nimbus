@@ -1,4 +1,4 @@
-"""Nimbus FastAPI backend - Phase 2 real-time orchestration.
+"""Nimbus FastAPI backend - Phase 2 real-time orchestration + Phase 3 evaluation.
 
 Runs from backend/ on port 8000:
     uvicorn main:app --reload --port 8000
@@ -13,11 +13,25 @@ Provides:
     POST /api/controller         switch decision engine mode (naive/reactive/nimbus)
     POST /api/reset              restart the island
     WS   /ws/telemetry           live telemetry stream
+    POST /api/evaluate           start an evaluation run (see Phase 3 below)
+    GET  /api/evaluate/{run_id}  result + progress for a run
+    GET  /api/evaluate/latest    latest completed result
+    GET  /api/evaluate           list runs
+    GET  /api/evaluate/aggregate/{run_id}  aggregated per-controller summary
+    POST /api/evaluate/cancel/{run_id}     cancel a queued/running run
 
-The lifespan wires config -> adapters -> runtime and starts the single
-simulation loop. Simulation + controller adapters default to clearly-labeled
-temporary mocks; set NIMBUS_SIMULATION_BACKEND / NIMBUS_CONTROLLER_BACKEND to
-connect Lalith's / Ali's real modules once they land in this branch.
+The lifespan wires config -> adapters -> runtime + evaluation runner and starts
+the single simulation loop. Simulation + controller adapters default to
+clearly-labeled temporary mocks; set NIMBUS_SIMULATION_BACKEND /
+NIMBUS_CONTROLLER_BACKEND to connect Lalith's / Ali's real modules once they
+land in this branch.
+
+Phase 3 (evaluation): an isolated EvaluationRunner on its own loop executes a
+deterministic set of scenarios (naive/reactive/nimbus per scenario), computes
+real metrics (prefers Ali's evaluation_metrics when importable, falls back to
+documented formulas — never fabricated), and keeps full results for REST
+polling. Evaluation runs on a separate worker loop and never disturbs the live
+demo telemetry loop.
 """
 
 from __future__ import annotations
@@ -29,6 +43,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api_routes import router
 from config import NIMBUS_VERSION, load_config
+from evaluation_runner import EvaluationRunner
+from evaluation_routes import router as evaluation_router
 from integrations import build_controller_adapter, build_simulation_adapter
 from runtime import BackendRuntime
 from state_manager import state_manager
@@ -41,6 +57,8 @@ async def lifespan(app: FastAPI):
     controller = build_controller_adapter(config)
     runtime = BackendRuntime(config, state_manager, simulation, controller)
     app.state.runtime = runtime
+    evaluation = EvaluationRunner(config)
+    app.state.evaluation = evaluation
     state_manager.mark_running(True)
     await runtime.start()
     try:
@@ -48,6 +66,7 @@ async def lifespan(app: FastAPI):
     finally:
         state_manager.mark_running(False)
         await runtime.stop()
+        evaluation.close()
 
 
 app = FastAPI(
@@ -55,7 +74,9 @@ app = FastAPI(
     description=(
         "Simulated autonomous energy-management backend for an isolated island. "
         "Phase 2: real-time simulation loop with controller + simulation "
-        "adapters, REST control plane and live telemetry stream."
+        "adapters, REST control plane and live telemetry stream. Phase 3: "
+        "isolated head-to-head evaluation of naive/reactive/nimbus controllers "
+        "across deterministic scenarios with honest per-controller metrics."
     ),
     version=NIMBUS_VERSION,
     lifespan=lifespan,
@@ -70,3 +91,4 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(evaluation_router)
