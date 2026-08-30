@@ -85,9 +85,11 @@ function toMs(v: number | string | undefined): number {
 }
 
 function oneOf<T extends string>(list: readonly T[], v: unknown, fallback: T): T {
-  return typeof v === "string" && (list as readonly string[]).includes(v)
-    ? (v as T)
-    : fallback;
+  if (typeof v !== "string") return fallback;
+  const direct = (list as readonly string[]).find((x) => x === v);
+  if (direct) return direct as T;
+  const lower = (list as readonly string[]).find((x) => x.toLowerCase() === v.toLowerCase());
+  return lower ? (lower as T) : fallback;
 }
 
 function normalizeResource(id: ResourceId, raw: RawResource | undefined): ResourceStatus {
