@@ -1,10 +1,13 @@
-"""Mock telemetry for the Nimbus backend foundation.
+"""Mock telemetry helpers for the Nimbus backend.
 
-CLEARLY MOCK DATA. Phase 1 stand-in only: produces realistic-but-fake
-stable-island telemetry so the dashboard/API/WebSocket pipes can be built
-and tested before Lalith's real simulation and Ali's decision engine exist.
-In Phase 2 this module is replaced by the real simulation; the seam is
-``state_manager.push(frame)`` with a ``TelemetryFrame``.
+CLEARLY MOCK DATA. Phase 1 stand-in: produces realistic-but-fake stable-island
+telemetry so the dashboard/API/WebSocket pipes could be built before Lalith's
+real simulation and Ali's decision engine exist.
+
+Phase 2: the FastAPI app no longer runs ``telemetry_loop`` — the runtime
+orchestration loop (runtime.py) drives the simulation adapter instead. These
+helpers are kept for backwards compatibility (tests import them) and are
+reused by the temporary mock simulation adapter (integrations/simulation.py).
 
 Generation is deterministic for a fixed tick time + seed (seeded RNG for
 jitter), so tests can assert invariants without flakiness.
@@ -17,11 +20,11 @@ import math
 import random
 import time
 
+from config import NIMBUS_VERSION
 from models import Resources, ResourceState, TelemetryFrame
 from state_manager import StateManager
 
-NIMBUS_VERSION = "0.1.0"
-TICK_INTERVAL_S = 0.5  # 500 ms telemetry cadence (REST + WebSocket share this)
+TICK_INTERVAL_S = 0.5  # 500 ms legacy Phase 1 cadence (kept for compat)
 
 # Generation configuration
 SOLAR_PEAK_KW = 120.0
@@ -193,8 +196,11 @@ async def seed_state(state: StateManager) -> None:
 
 
 async def telemetry_loop(state: StateManager, interval_s: float = TICK_INTERVAL_S) -> None:
-    """Single background producer loop. Runs for the process lifetime; cancelled
-    by the FastAPI lifespan on shutdown. There is exactly ONE of these.""" 
+    """DEPRECATED (Phase 1). Use the runtime orchestration loop instead.
+
+    Single background producer loop. Runs for the process lifetime; cancelled
+    by the FastAPI lifespan on shutdown. There is exactly ONE of these.
+    Kept only for backwards compatibility with Phase 1 tests / callers.""" 
     rng = random.Random(SEED)
     prev: TelemetryFrame | None = None
     last_time = time.time()

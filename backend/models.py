@@ -17,8 +17,13 @@ from pydantic.alias_generators import to_camel
 
 ControllerMode = Literal["naive", "reactive", "nimbus"]
 SeverityLevel = Literal["stable", "watch", "warning", "critical"]
-TrajectoryState = Literal["deteriorating", "stable", "improving"]
+TrajectoryState = Literal["deteriorating", "stable", "improving", "critical"]
 ResourceName = Literal["hospital", "desalination", "residential", "resort"]
+
+# Full decision-engine resource-state vocabulary (mapped to lowercase on the
+# wire). Phase 2 extends Phase 1's {normal, throttled, restoring, shed} with
+# the states Ali's decision engine actually emits.
+RESOURCE_STATES = ("normal", "throttled", "reduced", "shed", "cooldown", "restoring", "protected")
 
 RESOURCE_NAMES: tuple[ResourceName, ...] = (
     "hospital",
@@ -46,24 +51,78 @@ class HealthResponse(CamelModel):
     last_tick_ms: int | None = None
     connected_clients: int = 0
     telemetry_running: bool = False
+    controller_mode: ControllerMode = "reactive"
+    active_event: str | None = None
+    simulation_backend: str = "mock"
+    controller_backend: str = "mock"
+    simulation_ok: bool = True
+    controller_ok: bool = True
+    last_error: str | None = None
+
+
+# --------------------------------------------------------------------------- #
+# Phase 2 control-plane requests / responses
+# --------------------------------------------------------------------------- #
+class EventRequest(CamelModel):
+    """POST /api/event body. eventType is validated by the route (400 on unknown)."""
+
+    event_type: str
+    params: dict | None = None
+
+
+class EventResponse(CamelModel):
+    accepted: bool = True
+    event_type: str
+    active_event: str | None = None
+    timestamp_ms: int
+
+
+class ControllerRequest(CamelModel):
+    """POST /api/controller body. mode is validated at the schema (422 on unknown)."""
+
+    mode: ControllerMode
+
+
+class ControllerResponse(CamelModel):
+    mode: ControllerMode
+    previous_mode: ControllerMode
+    adopted: bool = True
+    adopted_at_ms: int
+
+
+class ResetResponse(CamelModel):
+    reset: bool = True
+    timestamp_ms: int
+    sequence: int
+    controller_mode: ControllerMode
+    active_event: str | None = None
 
 
 # --------------------------------------------------------------------------- #
 # Resources
 # --------------------------------------------------------------------------- #
 class ResourceState(CamelModel):
-    """Per-resource island telemetry (hospital, desalination, residential, resort)."""
+    """Per-resource island telemetry (hospital, desalination, residential, resort).
+
+    Phase 2 additive fields (max_demand_kw, minimum_operating_pct, criticality,
+    throttleable) give the dashboard the same resource metadata the shared
+    contract carries, while keeping the Phase 1 wire fields unchanged.
+    """
 
     name: ResourceName
     demand_kw: float = Field(ge=0.0)
     operating_pct: float = Field(ge=0.0, le=100.0)
     state: str = "normal"
     shedable: bool = False
+    max_demand_kw: float | None = Field(default=None, ge=0.0)
+    minimum_operating_pct: float | None = Field(default=None, ge=0.0, le=100.0)
+    criticality: float | None = Field(default=None, ge=0.0, le=100.0)
+    throttleable: bool = False
 
     @field_validator("state")
     @classmethod
     def state_must_be_known(cls, v: str) -> str:
-        allowed = {"normal", "throttled", "restoring", "shed"}
+        allowed = set(RESOURCE_STATES)
         if v not in allowed:
             raise ValueError(f"state must be one of {sorted(allowed)!r}, got {v!r}")
         return v

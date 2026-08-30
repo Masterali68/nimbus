@@ -88,6 +88,19 @@ class StateManager:
             self._history.append(frame)
             self._last_tick_ms = frame.timestamp_ms
 
+    async def reset(self) -> None:
+        """Clear current frame + history and restart the sequence at 0.
+
+        Called by the runtime on POST /api/reset. The running flag and the
+        connected-client set are intentionally untouched: a reset restarts the
+        island, not the backend.
+        """
+        async with self._lock:
+            self._current = None
+            self._history.clear()
+            self._sequence = 0
+            self._last_tick_ms = None
+
     def get_state(self) -> TelemetryFrame | None:
         return self._current
 
