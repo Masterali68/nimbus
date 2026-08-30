@@ -1,4 +1,4 @@
-import type { ControllerMode, IslandResource, IslandState, ResourceMap } from "@/types/nimbus";
+import type { ControllerMode, IslandResource, IslandState, ResourceMap } from "../types";
 
 const hospital: IslandResource = {
   id: "hospital",

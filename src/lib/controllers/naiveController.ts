@@ -5,7 +5,7 @@ import type {
   ReasonCode,
   ResourceAction,
   ResourceMap,
-} from "@/types/nimbus";
+} from "../engine/types";
 import { naiveThresholds } from "@/lib/constants/thresholds";
 import {
   baseSeverityFromBattery,

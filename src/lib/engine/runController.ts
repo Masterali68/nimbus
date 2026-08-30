@@ -1,4 +1,4 @@
-import type { IslandState, NimbusDecision, ResourceAction, Severity, Trajectory } from "@/types/nimbus";
+import type { IslandState, NimbusDecision, ResourceAction, Severity, Trajectory } from "./types";
 import { nimbusThresholds } from "@/lib/constants/thresholds";
 import { runNaiveController } from "@/lib/controllers/naiveController";
 import { runNimbusController } from "@/lib/controllers/nimbusController";

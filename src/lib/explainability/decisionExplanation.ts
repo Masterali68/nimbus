@@ -5,7 +5,7 @@ import type {
   ResourceAction,
   Severity,
   Trajectory,
-} from "@/types/nimbus";
+} from "../engine/types";
 import {
   desalinationLimits,
   residentialLimits,

@@ -1,4 +1,4 @@
-import type { ControllerMode, IslandState, NimbusDecision } from "@/types/nimbus";
+import type { ControllerMode, IslandState, NimbusDecision } from "../types";
 import { runController } from "@/lib/engine/runController";
 import {
   recovery,

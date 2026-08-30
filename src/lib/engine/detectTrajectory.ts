@@ -1,4 +1,4 @@
-import type { Severity, Trajectory } from "@/types/nimbus";
+import type { Severity, Trajectory } from "./types";
 import { nimbusThresholds } from "@/lib/constants/thresholds";
 
 export interface TrajectoryInput {

@@ -6,7 +6,7 @@ import type {
   ResourceAction,
   ResourceMap,
   ResourceState,
-} from "@/types/nimbus";
+} from "../engine/types";
 import {
   desalinationLimits,
   nimbusThresholds,

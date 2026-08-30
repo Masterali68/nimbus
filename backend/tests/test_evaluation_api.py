@@ -99,8 +99,15 @@ def test_live_state_unchanged_during_evaluation(eval_client: TestClient):
     prior = sm.get_state()
     _run_started(eval_client, n=2)
     # Evaluation runs on its own runner and must never start or mutate the
-    # live demo StateManager (still None/untouched in this isolated app).
-    assert sm.get_state() == prior
+    # live demo StateManager. When the shared session client runs the live
+    # loop (prior is not None) the loop keeps ticking and the controller
+    # mode must survive the evaluation untouched.
+    after = sm.get_state()
+    if prior is None:
+        assert after is None
+    else:
+        assert after is not None
+        assert after.controller_mode == prior.controller_mode
 
 
 def test_progress_updates_and_completes(eval_client: TestClient):

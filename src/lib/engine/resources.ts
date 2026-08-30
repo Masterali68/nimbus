@@ -1,4 +1,4 @@
-import type { IslandResource, ResourceId, ResourceMap, ResourceState } from "@/types/nimbus";
+import type { IslandResource, ResourceId, ResourceMap, ResourceState } from "./types";
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

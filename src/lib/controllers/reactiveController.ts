@@ -4,7 +4,7 @@ import type {
   NimbusDecision,
   ReasonCode,
   ResourceAction,
-} from "@/types/nimbus";
+} from "../engine/types";
 import { reactiveThresholds } from "@/lib/constants/thresholds";
 import {
   baseSeverityFromBattery,
