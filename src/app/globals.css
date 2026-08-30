@@ -1,26 +1,116 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Island operations-center surface */
+  --color-ops-bg: #060a12;
+  --color-ops-panel: #0d1524;
+  --color-ops-raised: #17233c;
+  --color-ops-border: #223049;
+  --color-ops-text: #e7edf8;
+  --color-ops-muted: #93a6c4;
+  --color-ops-dim: #62748f;
+
+  /* Signal language: normal / recovery / warning / crisis */
+  --color-signal-cyan: #38bdf8;
+  --color-signal-blue: #3b82f6;
+  --color-signal-green: #34d399;
+  --color-signal-amber: #fbbf24;
+  --color-signal-orange: #fb923c;
+  --color-signal-red: #f87171;
+  --color-signal-ice: #dbeafe;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--color-ops-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background-color: var(--color-ops-bg);
+  color: var(--color-ops-text);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes nimbus-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.nimbus-pulse {
+  animation: nimbus-pulse 2s ease-in-out infinite;
+}
+
+/* Brief highlight when a card/panel changes from live telemetry. */
+@keyframes nimbus-flash {
+  0% {
+    box-shadow: 0 0 0 0 var(--nimbus-flash-color, rgba(56, 189, 248, 0.55));
+  }
+  100% {
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0);
+  }
+}
+
+.nimbus-flash {
+  animation: nimbus-flash 0.65s ease-out;
+}
+
+/* Slow sheen along a bar while a resource is recovering. */
+@keyframes nimbus-sheen {
+  0% {
+    background-position: -160% 0;
+  }
+  100% {
+    background-position: 260% 0;
+  }
+}
+
+.nimbus-sheen {
+  background-image: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  background-size: 200% 100%;
+  animation: nimbus-sheen 1.8s ease-in-out infinite;
+}
+
+/* One-shot accent when a disruptive event begins. */
+@keyframes nimbus-alert {
+  0% {
+    box-shadow: inset 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+  25% {
+    box-shadow: inset 0 0 90px -10px rgba(251, 191, 36, 0.5);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+}
+
+.nimbus-alert {
+  animation: nimbus-alert 1.1s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
