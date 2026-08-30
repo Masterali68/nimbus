@@ -1,109 +1,96 @@
-/**
- * Nimbus shared contract — Phase 1.
- *
- * Frontend (feat/ui-dashboard) uses these types to drive the mock telemetry
- * source. They are the strawman for the real IslandState / NimbusDecision that
- * Ali (decision engine) and Vishruth (backend) will produce. Reconcile with Ali
- * before backend integration — do not change field names here unilaterally once
- * the engine branch adopts them.
- */
-
 export type ControllerMode = "naive" | "reactive" | "nimbus";
-
-export type SystemStatus = "stable" | "watch" | "warning" | "critical";
-
-export type IslandEvent =
-  | "storm"
-  | "cloud_cover"
-  | "wind_drop"
-  | "tourist_surge"
-  | "water_emergency"
-  | "compound_crisis";
 
 export type ResourceId = "hospital" | "desalination" | "residential" | "resort";
 
-/** Importance ladder, independent of the current alarm colour. */
-export type ResourceCriticality = "vital" | "high" | "standard" | "deferrable";
-
 export type ResourceState =
-  | "protected"
-  | "normal"
-  | "throttled"
-  | "reduced"
-  | "shed"
-  | "cooldown";
+  | "PROTECTED"
+  | "NORMAL"
+  | "THROTTLED"
+  | "REDUCED"
+  | "SHED"
+  | "COOLDOWN";
 
-export type TrajectoryLabel = "stable" | "improving" | "deteriorating" | "critical";
+export type Severity = "STABLE" | "WATCH" | "WARNING" | "CRITICAL";
 
-export interface EnergyMetrics {
+export type Trajectory = "STABLE" | "IMPROVING" | "DETERIORATING" | "CRITICAL";
+
+export type ResourceAction =
+  | "NONE"
+  | "PROTECT"
+  | "THROTTLE"
+  | "REDUCE"
+  | "SHED"
+  | "RESTORE"
+  | "COOLDOWN";
+
+export type ReasonCode =
+  | "OK_STABLE"
+  | "OK_IMPROVING"
+  | "WATCH_TRAJECTORY"
+  | "WATCH_BATTERY"
+  | "WARNING_SHED_RESORT"
+  | "WARNING_THROTTLE_DESALINATION"
+  | "WARNING_REDUCE_RESIDENTIAL"
+  | "CRITICAL_BATTERY"
+  | "CRITICAL_COLLAPSE"
+  | "RECOVERY_RESTORE_DESALINATION"
+  | "RECOVERY_RESTORE_RESIDENTIAL"
+  | "RECOVERY_RESTORE_RESORT"
+  | "COOLDOWN_HOLD";
+
+export interface IslandResource {
+  id: ResourceId;
+  name: string;
+  criticality: number;
+  maxDemandKw: number;
+  minimumOperatingPct: number;
+  operatingPct: number;
+  currentDemandKw: number;
+  state: ResourceState;
+  throttleable: boolean;
+  shedCapable: boolean;
+}
+
+export type ResourceMap = Record<ResourceId, IslandResource>;
+
+export interface IslandState {
+  timestampMs: number;
+  tick: number;
+  activeEvent: string;
+  controllerMode: ControllerMode;
   solarKw: number;
   windKw: number;
   totalGenerationKw: number;
-  totalDemandKw: number;
-  /** Signed: generation minus demand. Negative = battery discharging. */
-  netKw: number;
-  batteryPct: number;
-  batteryEnergyKwh: number;
+  batteryKwh: number;
   batteryCapacityKwh: number;
-}
-
-export interface StabilityMetrics {
-  /** Filtered (smoothed) net power. */
-  energyBalanceKw: number;
-  /** Change in energy balance per sim-minute. */
-  velocity: number;
-  /** Change in velocity per sim-minute. */
-  acceleration: number;
-  trajectory: TrajectoryLabel;
-  interpretation: string;
-}
-
-export interface ResourceStatus {
-  id: ResourceId;
-  name: string;
-  criticality: ResourceCriticality;
-  /** 0–100, share of desired draw the controller is currently allowing. */
-  operatingPct: number;
-  demandKw: number;
-  /** 100%-draw reference for this resource. */
-  nominalKw: number;
-  state: ResourceState;
-}
-
-export interface TelemetrySample {
-  t: number;
-  solarKw: number;
-  windKw: number;
-  totalDemandKw: number;
-  netKw: number;
   batteryPct: number;
-}
-
-export interface IslandState {
-  timestamp: number;
-  controller: ControllerMode;
-  activeEvent: IslandEvent | null;
-  status: SystemStatus;
-  energy: EnergyMetrics;
-  stability: StabilityMetrics;
-  resources: ResourceStatus[];
-  history: TelemetrySample[];
-}
-
-export interface DecisionAction {
-  resource: ResourceId;
-  action: string;
+  batteryChargeRateKw: number;
+  batteryDischargeRateKw: number;
+  totalDemandKw: number;
+  netPowerKw: number;
+  filteredNetPowerKw: number;
+  velocityKwS: number;
+  accelerationKwS2: number;
+  resources: ResourceMap;
 }
 
 export interface NimbusDecision {
-  id: string;
-  timestamp: number;
-  title: string;
+  timestampMs: number;
+  controllerMode: ControllerMode;
+  severity: Severity;
+  trajectory: Trajectory;
+  action: ResourceAction;
+  reasonCode: ReasonCode;
   explanation: string;
-  actions: DecisionAction[];
-  protectedResources: ResourceId[];
-  throttledResources: ResourceId[];
-  reducedResources: ResourceId[];
-  shedResources: ResourceId[];
   expectedOutcome: string;
+  resourceUpdates: Partial<ResourceMap>;
+}
+
+export interface TelemetryPoint {
+  timestampMs: number;
+  solarKw: number;
+  windKw: number;
+  totalDemandKw: number;
+  netPowerKw: number;
+  batteryPct: number;
 }
