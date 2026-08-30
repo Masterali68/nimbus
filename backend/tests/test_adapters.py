@@ -130,11 +130,23 @@ def test_mock_controller_passthrough_decision() -> None:
         assert upd["operatingPct"] == snap["resources"][name]["operatingPct"]
 
 
-def test_ali_adapter_missing_module_raises_clear_error() -> None:
+def test_ali_adapter_uses_real_engine_when_present() -> None:
+    adapter = AliControllerAdapter()
+    assert adapter.is_real is True
+    decision = adapter.decide("reactive", {"batteryPct": 80.0, "resources": {}}, {}, 1.0)
+    assert isinstance(decision, dict)
+    assert "action" in decision and "severity" in decision
+
+
+def test_ali_adapter_missing_module_raises_clear_error(monkeypatch) -> None:
+    import sys
+
+    monkeypatch.setitem(sys.modules, "controller", None)
     try:
         AliControllerAdapter()
     except ControllerAdapterError as exc:
         assert "controller" in str(exc)
+        assert "mock" in str(exc)
         return
     raise AssertionError("expected ControllerAdapterError")
 

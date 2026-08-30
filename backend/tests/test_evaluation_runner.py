@@ -221,12 +221,16 @@ def test_no_fabricated_metrics_in_full_run():
     _wait(runner, started.run_id)
     result = runner.get_result(started.run_id)
     assert result.status == "completed"
+    # Ali's real evaluation_metrics may be importable (merged main) -> "ali";
+    # otherwise the documented local fallback -> "local_fallback". Either is
+    # honest; metrics are computed from the trace, never invented.
+    assert result.metric_source in {"ali", "local_fallback"}
     for scenario in result.controller_results:
         for mode, cm in scenario.controllers.items():
             # Metrics must come from the trace (all fields present), never invented.
             assert cm.critical_service_uptime_pct is not None
             assert cm.minimum_battery_pct is not None
-            assert cm.metric_source == "local_fallback"
+            assert cm.metric_source in {"ali", "local_fallback"}
     runner.close()
 
 
